@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: ./src/nginx-ssl/Dockerfile
+    ports:
+      - "443:443"
+
+  uwsgi:
+    build:
+      context: .
+      dockerfile: ./src/uwsgi-flask/Dockerfile
+    ports: 
+      - "5000:5000"
+    volumes:
+      - ./src/uwsgi-flask/app:/var/www/app
+    # environment: 
+    #   - 
+
+  mariadb:
+    image: mariadb
+    # logging: 
+    #   driver: none
+    environment: 
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
