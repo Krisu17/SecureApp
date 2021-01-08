@@ -16,8 +16,10 @@ services:
       - "5000:5000"
     volumes:
       - ./src/uwsgi-flask/app:/var/www/app
-    # environment: 
-    #   - 
+    environment: 
+      - PASSWORD_PEPPER=$PASSWORD_PEPPER
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+      - APP_SECRET=$APP_SECRET
 
   mariadb:
     image: mariadb

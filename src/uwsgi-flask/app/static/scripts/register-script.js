@@ -2,11 +2,12 @@ document.addEventListener('DOMContentLoaded', function (event) {
 
     const GET = "GET";
     const POST = "POST";
-    const URL = "https://localhost:8080/";
+    const URL = "https://localhost/";
 
     const NAME_FIELD_ID = "name";
     const SURNAME_FIELD_ID = "surname";
     const BIRTH_DATE_FIELD_ID = "birthDate";
+    const EMAIL_FIELD_ID = "email";
     const LOGIN_FIELD_ID = "login";
     const PASSWORD_FIELD_ID = "password";
     const REPEAT_PASSWORD_FIELD_ID = "second_password";
@@ -14,11 +15,12 @@ document.addEventListener('DOMContentLoaded', function (event) {
     const ENTROPHY_BAR_ID = "passwordEntropy";
     const ENTROPHY_TEXT_ID = "passwordEntropyText";
 
-    var HTTP_STATUS = {OK: 200, CREATED: 201, NOT_FOUND: 404};
+    var HTTP_STATUS = {OK: 200, CREATED: 201, BAD_REQUEST: 400, NOT_FOUND: 404};
 
     prepareEventOnNameChange();
     prepareEventOnSurnameChange();
     prepareEventOnDateChange();
+    prepareEventOnEmailChange();
     prepareEventOnLoginChange();
     prepareEventOnPasswordChange();
     prepareEventOnRepeatPasswordChange();
@@ -50,6 +52,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
         let nameWarningElemId = document.getElementById("nameWarning");
         let surnameWarningElemId = document.getElementById("surnameWarning");
         let birthDateYearWarningElemId = document.getElementById("yearWarning");
+        let emailWarningElemId = document.getElementById("emailWarning");
         let loginAvailabilityWarningElemId = document.getElementById("availableLoginWarning");
         let loginValidityWarningElemId = document.getElementById("validLoginWarning");
         let passwordWarningElemId = document.getElementById("passwordWarning");
@@ -61,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
             surnameWarningElemId === null &&
             birthDateYearWarningElemId === null &&
             loginAvailabilityWarningElemId === null &&
+            emailWarningElemId === null &&
             loginValidityWarningElemId === null &&
             passwordWarningElemId === null &&
             repeatPasswordWarningElemId === null) {
@@ -75,6 +79,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
             document.getElementById(NAME_FIELD_ID).value === "" ||
             document.getElementById(SURNAME_FIELD_ID).value === "" ||
             document.getElementById(BIRTH_DATE_FIELD_ID).value === "" ||
+            document.getElementById(EMAIL_FIELD_ID).value === "" ||
             document.getElementById(LOGIN_FIELD_ID).value === "" ||
             document.getElementById(PASSWORD_FIELD_ID).value === "" ||
             document.getElementById(REPEAT_PASSWORD_FIELD_ID).value === ""
@@ -83,15 +88,13 @@ document.addEventListener('DOMContentLoaded', function (event) {
         } else {
             return false;
         }
-        
-        
     }
+
 
     function prepareEventOnLoginChange() {
         let loginInput = document.getElementById(LOGIN_FIELD_ID);
         loginInput.addEventListener("change", updateLoginAvailabilityMessage);
     }
-
 
     function prepareEventOnPasswordChange() {
         let passwordInput = document.getElementById(PASSWORD_FIELD_ID);
@@ -120,6 +123,10 @@ document.addEventListener('DOMContentLoaded', function (event) {
         surname.addEventListener("change", updateSurnameValidityMessage);
     }
 
+    function prepareEventOnEmailChange() {
+        let email = document.getElementById(EMAIL_FIELD_ID);
+        email.addEventListener("change", updateEmailValidityMessage);
+    }
 
     function updateLoginAvailabilityMessage() {
         let availabilityWarningElemId = "availableLoginWarning";
@@ -210,8 +217,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }
 
     function submitRegisterForm() {
-        let login = document.getElementById(LOGIN_FIELD_ID).value
-        let registerUrl = URL + "register/create_new_user/" + login;
+        let registerUrl = URL + "register_new_user";
 
         let registerParams = {
             method: POST,
@@ -352,6 +358,19 @@ document.addEventListener('DOMContentLoaded', function (event) {
             removeWarningMessage(warningElemId);
         } else {
             showWarningMessage(warningElemId, warningMessage, SURNAME_FIELD_ID);
+        }
+    }
+
+    function updateEmailValidityMessage() {
+        let warningElemId = "emailWarning";
+        let warningMessage = "Proszę podać poprawny adres email.";
+        let email = document.getElementById(EMAIL_FIELD_ID).value;
+        let regExpression = /\S+@\S+\.\S+/;
+
+        if (email.match(regExpression)) {
+            removeWarningMessage(warningElemId);
+        } else {
+            showWarningMessage(warningElemId, warningMessage, EMAIL_FIELD_ID);
         }
     }
 

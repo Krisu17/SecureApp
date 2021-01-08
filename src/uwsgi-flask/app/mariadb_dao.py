@@ -1,6 +1,10 @@
 import time
+import os
 import flask
 import mysql.connector as mariadb
+MYSQL_ROOT_PASSWORD = "MYSQL_ROOT_PASSWORD"
+
+
 class MariaDBDAO:
   def deny_semicolon(self, *args):
     for arg in args:
@@ -44,48 +48,123 @@ class MariaDBDAO:
     while self.sql is None:
       self.sql = self.choose_database("db")
     print("Connected to MariaDB")
-    
-  def get_username(self, sid):
+
+  def setNewlyRegisteredUser(self, login, crypted_password, name, surname, email, birthDate):
     try:
-      self.deny_semicolon(sid)
-      self.sql.execute(f"SELECT username FROM session WHERE sid = '{sid}'")
-      username, = self.sql.fetchone() or (None,)
-      return username
+      self.deny_semicolon(login, crypted_password, name, surname, email, birthDate)
+      self.sql.execute(f"INSERT INTO users (login, password, name, surname, email, birthDate) VALUES ('{login}', '{crypted_password}', '{name}', '{surname}', '{email}', '{birthDate}')")
+      self.db.commit()
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+
+  def isIpBlocked(self, ip):
+    try:
+      self.sql.execute(f"SELECT ip FROM blocked WHERE until > NOW()")
+      ip, = self.sql.fetchone() or (None,)
+      return ip
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+  
+  def incrLoggingAttemps(self, ip):
+    try:
+      self.sql.execute(f"SELECT attemps FROM security_table WHERE ip = '{ip}'")
+      attemps, = self.sql.fetchone() or (None,)
+      if(attemps is None):
+        self.sql.execute(f"INSERT INTO security_table (ip, attemps, last) VALUES ('{ip}', 1, NOW())")
+        self.db.commit()
+      else:  
+        self.sql.execute(f"SELECT attemps FROM security_table WHERE ip = '{ip}' AND last + INTERVAL 5 MINUTE > NOW()")
+        attemps, = self.sql.fetchone() or (None,)
+        if(attemps is None):
+          self.sql.execute(f"UPDATE security_table SET attemps = 1 WHERE ip = '{ip}'")
+        else:
+          if(attemps == 5):
+            blockUser(ip)
+            return False
+          else:
+            attemps = attemps + 1
+            self.sql.execute(f"UPDATE security_table SET attemps = {attemps} WHERE ip = '{ip}'")
+        self.sql.execute(f"UPDATE security_table SET last = NOW() WHERE ip = '{ip}'")
+        self.db.commit()
+        return True
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+      return False
+
+  def blockUser(ip):
+    try:
+      self.sql.execute(f"SELECT ip FROM blocked WHERE ip = '{ip}' ")
+      ips, = self.sql.fetchone() or (None,)
+      if(ips is None):
+        self.sql.execute(f"INSERT INTO blocked (ip, until) VALUES ('{ip}', NOW() + INTERVAL 1 MINUTE)")
+        self.db.commit()
+      else:
+        self.sql.execute(f"UPDATE blocked SET until = NOW() + INTERVAL 1 MINUTE WHERE ip = '{ip}'")
+        self.db.commit()
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+
+  def resetSecurityRecord(self, ip):
+    try:
+      self.sql.execute(f"SELECT attemps FROM security_table WHERE ip = '{ip}' AND last + INTERVAL 5 MINUTE > NOW()")
+      attemps, = self.sql.fetchone() or (None,)
+      if(attemps is None):
+        self.sql.execute(f"UPDATE security_table SET attemps = 0 WHERE ip = '{ip}'")
+        self.db.commit()
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+
+  def checkLoginAvailability(self, login):
+    try:
+      self.deny_semicolon(login)
+      self.sql.execute(f"SELECT login FROM users WHERE login = '{login}'")
+      login, = self.sql.fetchone() or (None,)
+      return login
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
     return None
 
-  def get_password(self, username):
+
+  def get_login(self, sid):
     try:
-      self.deny_semicolon(username)
-      print(f"SELECT password FROM user WHERE username = '{username}'")
-      self.sql.execute(f"SELECT password FROM user WHERE username = '{username}'")
+      self.deny_semicolon(sid)
+      self.sql.execute(f"SELECT login FROM session WHERE sid = '{sid}'")
+      login, = self.sql.fetchone() or (None,)
+      return login
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return None
+
+  def getCryptedPassword(self, login):
+    try:
+      self.deny_semicolon(login)
+      self.sql.execute(f"SELECT password FROM users WHERE login = '{login}'")
       password, = self.sql.fetchone() or (None,)
       return password
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
     return None
 
-  def set_session(self, sid, username):
+  def set_session(self, sid, login):
     try:
-      self.deny_semicolon(sid, username)
-      self.sql.execute(f"INSERT INTO session (sid, username) VALUES ('{sid}', '{username}')")
+      self.deny_semicolon(sid, login)
+      self.sql.execute(f"INSERT INTO session (sid, login) VALUES ('{sid}', '{login}')")
       self.db.commit()
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
 
-  def add_post(self, username, post):
+  def add_post(self, login, post):
     try:
-      self.deny_semicolon(username, post)
-      self.sql.execute(f"INSERT INTO posts (username, post) VALUES ('{username}', '{post}')")
+      self.deny_semicolon(login, post)
+      self.sql.execute(f"INSERT INTO posts (login, post) VALUES ('{login}', '{post}')")
       self.db.commit()
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
 
-  def get_posts(self, username):
+  def get_posts(self, login):
     try:
-      self.deny_semicolon(username)
-      self.sql.execute(f"SELECT post FROM posts WHERE username = '{username}' ORDER BY id DESC")
+      self.deny_semicolon(login)
+      self.sql.execute(f"SELECT post FROM posts WHERE login = '{login}' ORDER BY id DESC")
       posts = self.sql.fetchmany(size=4)
       if len(posts) == 0:
         return ["(nie masz postów)"]
@@ -94,10 +173,10 @@ class MariaDBDAO:
       flask.flash(f"Database error: {err}")
     return []
 
-  def get_post(self, username, index):
+  def get_post(self, login, index):
     try:
-      self.deny_semicolon(username, index)
-      self.sql.execute(f"SELECT post FROM posts WHERE username = '{username}' AND id = {index}")
+      self.deny_semicolon(login, index)
+      self.sql.execute(f"SELECT post FROM posts WHERE login = '{login}' AND id = {index}")
       post, = self.sql.fetchone() or (None,)
       return post
     except mariadb.Error as err:
