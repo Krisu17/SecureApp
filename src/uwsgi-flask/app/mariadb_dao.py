@@ -79,7 +79,7 @@ class MariaDBDAO:
           self.sql.execute(f"UPDATE security_table SET attemps = 1 WHERE ip = '{ip}'")
         else:
           if(attemps == 5):
-            blockUser(ip)
+            self.blockUser(ip)
             return False
           else:
             attemps = attemps + 1
@@ -91,7 +91,7 @@ class MariaDBDAO:
       flask.flash(f"Database error: {err}")
       return False
 
-  def blockUser(ip):
+  def blockUser(self, ip):
     try:
       self.sql.execute(f"SELECT ip FROM blocked WHERE ip = '{ip}' ")
       ips, = self.sql.fetchone() or (None,)

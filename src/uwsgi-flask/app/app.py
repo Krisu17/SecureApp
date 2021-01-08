@@ -24,15 +24,21 @@ PEPPER = "PASSWORD_PEPPER"
 
 @app.route('/')
 def index():
-    return make_response(render_template("index.html"))
+    response = make_response(render_template("index.html"))
+    response.headers['server'] = None
+    return response
 
 @app.route('/login')
 def login():
-    return make_response(render_template("login.html"))
+    response = make_response(render_template("login.html"))
+    response.headers['server'] = None
+    return response
 
 @app.route('/register', methods=[GET])
 def register():
-    return make_response(render_template("register.html"))
+    response = make_response(render_template("register.html"))
+    response.headers['server'] = None
+    return response
 
 @app.route('/register_new_user', methods=[POST])
 def register_new_user():
@@ -97,15 +103,15 @@ def login_user():
         loginForm = request.form
         login = loginForm.get("login")
         password = loginForm.get("password")
-        time.sleep(2)
-        if(dao.isIpBlocked(loginForm.remote_addr) is None):
+        time.sleep(1)
+        if(dao.isIpBlocked(request.remote_addr) is None):
             cryptedPassFromDb = dao.getCryptedPassword(login)
             if(cryptedPassFromDb is not None):
                 passwordHashedOnce = hashlib.sha256(password.encode('utf-8'))
                 passwordHashedTwice = hashlib.sha256((passwordHashedOnce.hexdigest() + os.environ.get(PEPPER)).encode('utf-8'))
                 passwordHashedTriple = hashlib.sha256((passwordHashedTwice.hexdigest().encode('utf-8')))
                 if(bcrypt.checkpw(passwordHashedTriple.hexdigest().encode('utf-8'), cryptedPassFromDb.encode('utf-8'))):
-                    dao.resetSecurityRecord(loginForm.remote_addr)
+                    dao.resetSecurityRecord(request.remote_addr)
                     session['username'] = login
                     del passwordHashedOnce
                     del passwordHashedTwice
@@ -115,7 +121,7 @@ def login_user():
                     response.headers['server'] = None
                     return response
             else:
-                if(dao.incrLoggingAttemps(loginForm.remote_addr)):
+                if(dao.incrLoggingAttemps(request.remote_addr)):
                     response = make_response("Bad request", 400)
                     response.headers['server'] = None
                     return response
@@ -124,12 +130,12 @@ def login_user():
                     response.headers['server'] = None
                     return response
         else:
-            dao.incrLoggingAttemps(loginForm.remote_addr)
+            dao.incrLoggingAttemps(request.remote_addr)
             response = make_response("User is blocked", 403)
             response.headers['server'] = None
             return response
     else:
-        if(dao.incrLoggingAttemps(loginForm.remote_addr)):
+        if(dao.incrLoggingAttemps(request.remote_addr)):
             response = make_response("Bad request", 400)
             response.headers['server'] = None
             return response
