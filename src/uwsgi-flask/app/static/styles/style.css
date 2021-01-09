@@ -273,3 +273,8 @@ input, label {
     height: 30px;
     background-color: red;
   }
+
+.forget-link {
+    text-align: right;
+    color: #025d37;
+}

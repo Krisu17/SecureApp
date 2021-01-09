@@ -6,6 +6,7 @@ import base64
 import json
 from datetime import datetime
 from .mariadb_dao import MariaDBDAO
+from secrets import token_urlsafe
 
 APP_SECRET = "APP_SECRET"
 
@@ -20,25 +21,112 @@ dao = MariaDBDAO("mariadb")
 GET = "GET"
 POST = "POST"
 PEPPER = "PASSWORD_PEPPER"
+URL = "https://localhost/"
 
 
 @app.route('/')
 def index():
-    response = make_response(render_template("index.html"))
+    if ('username' in session.keys()):
+        isValidCookie = True
+    else:
+        isValidCookie = False
+    response = make_response(render_template("index.html", isValidCookie=isValidCookie))
     response.headers['server'] = None
     return response
 
 @app.route('/login')
 def login():
-    response = make_response(render_template("login.html"))
+    if ('username' in session.keys()):
+        isValidCookie = True
+    else:
+        isValidCookie = False
+    response = make_response(render_template("login.html", isValidCookie=isValidCookie))
     response.headers['server'] = None
     return response
 
 @app.route('/register', methods=[GET])
 def register():
-    response = make_response(render_template("register.html"))
+    if ('username' in session.keys()):
+        isValidCookie = True
+    else:
+        isValidCookie = False
+    response = make_response(render_template("register.html", isValidCookie=isValidCookie))
     response.headers['server'] = None
     return response
+
+@app.route('/password_recovery', methods=[GET])
+def password_recovery():
+    response = make_response(render_template("password_recovery.html"))
+    response.headers['server'] = None
+    return response
+
+@app.route('/reset_password', methods=[POST])
+def reset_password():
+    resetForm = request.form
+    login = dao.returnLoginToPassRecovery(resetForm.get("birthDate"), resetForm.get("email"))
+    if (login is not None):
+        urlToReset = token_urlsafe(64)
+        dao.addSafeUrl(login, urlToReset)
+        print("=================================================")
+        print("------------------Wysyłam link:------------------")
+        print(URL + "reset_urls/" + urlToReset)
+        print("--------------------Na adres:--------------------")
+        print(resetForm.get("email"))
+        print("=================================================")
+    response = make_response("OK", 200)
+    response.headers['server'] = None
+    return response
+
+@app.route("/fetchall")
+def fetchall():
+    all = dao.fetchAll()
+    print(all)
+    return ("OK",200)
+
+@app.route('/reset_urls/<string:token_url>', methods=[GET])
+def reset_urls(token_url):
+    login = dao.ifCorrectReturnLoginToPassRecovery(token_url)
+    if(login is not None):
+        response = make_response(render_template("password_recovery_form.html", login=login, token_url=token_url))
+        response.headers['server'] = None
+        return response
+    response = make_response("Not found", 404)
+    response.headers['server'] = None
+    return response
+
+@app.route('/reset_password/<string:token_url>', methods=[POST])
+def reset_password_url(token_url):
+    login = dao.ifCorrectReturnLoginToPassRecovery(token_url)
+    if(login is not None):
+        registerForm = request.form
+        if (registerForm.get("password") is None):
+            response = make_response("Bad request", 400)
+            response.headers['server'] = None
+            return response
+        passwordHashedOnce = hashlib.sha256((registerForm.get("password")).encode('utf-8'))
+        passwordHashedTwice = hashlib.sha256((passwordHashedOnce.hexdigest() + os.environ.get(PEPPER)).encode('utf-8'))
+        passwordHashedTriple = hashlib.sha256((passwordHashedTwice.hexdigest().encode('utf-8')))
+        salt = bcrypt.gensalt()
+        passwordBcrypted = bcrypt.hashpw(passwordHashedTriple.hexdigest().encode('utf-8'), salt) 
+        dao.setNewPassword(login, passwordBcrypted)
+        del passwordHashedOnce
+        del passwordHashedTwice
+        del passwordHashedTriple
+        del salt
+        del passwordBcrypted
+        response = make_response("Password changed", 201)
+        response.headers['server'] = None
+        return response
+    else:
+        response = make_response("Not found", 404)
+        response.headers['server'] = None
+        return response
+
+@app.route("/logout")
+def logout():
+    if ('username' in session.keys()):
+        session.pop('username',None)
+    return redirect("/")
 
 @app.route('/register_new_user', methods=[POST])
 def register_new_user():
@@ -52,7 +140,7 @@ def register_new_user():
         response = make_response("Bad request", 400)
         response.headers['server'] = None
         return response
-    if(True):
+    if(True): # to inspekt
         passwordHashedOnce = hashlib.sha256((registerForm.get("password")).encode('utf-8'))
         passwordHashedTwice = hashlib.sha256((passwordHashedOnce.hexdigest() + os.environ.get(PEPPER)).encode('utf-8'))
         passwordHashedTriple = hashlib.sha256((passwordHashedTwice.hexdigest().encode('utf-8')))
@@ -73,17 +161,6 @@ def register_new_user():
         response.headers['server'] = None
         return response
 
-
-# def checkRegisterForm(request):
-#     if (len(request.get("login")) > 32 or
-#     len(registerForm.get("name")) > 32 or
-#     len(registerForm.get("surname")) > 32 or
-#     len(registerForm.get("email")) > 64 or
-#     len(registerForm.get("birthDate")) > 32 )
-#     ):
-#         return False
-#     else:
-#         return True
 
 @app.route('/register/<string:login>')
 def checkLoginAvailability(login):
@@ -144,8 +221,3 @@ def login_user():
             response.headers['server'] = None
             return response
 
-# def checkLoginForm(request):
-#     if (len(request.get("login")) > 32):
-#         return False
-#     else:
-#         return True

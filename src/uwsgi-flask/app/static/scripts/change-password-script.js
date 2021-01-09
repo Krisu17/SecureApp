@@ -1,33 +1,23 @@
 document.addEventListener('DOMContentLoaded', function (event) {
 
-    const GET = "GET";
     const POST = "POST";
     const URL = "https://localhost/";
+    let token_url = document.getElementById("token_url").textContent;
 
-    const NAME_FIELD_ID = "name";
-    const SURNAME_FIELD_ID = "surname";
-    const BIRTH_DATE_FIELD_ID = "birthDate";
-    const EMAIL_FIELD_ID = "email";
-    const LOGIN_FIELD_ID = "login";
     const PASSWORD_FIELD_ID = "password";
     const REPEAT_PASSWORD_FIELD_ID = "second_password";
-    const SUBMIT_BUTTON_ID = "button-reg-form";
+    const SUBMIT_BUTTON_ID = "button-pass-rec";
     const ENTROPHY_BAR_ID = "passwordEntropy";
     const ENTROPHY_TEXT_ID = "passwordEntropyText";
 
     var HTTP_STATUS = {OK: 200, CREATED: 201, BAD_REQUEST: 400, NOT_FOUND: 404};
 
-    prepareEventOnNameChange();
-    prepareEventOnSurnameChange();
-    prepareEventOnDateChange();
-    prepareEventOnEmailChange();
-    prepareEventOnLoginChange();
     prepareEventOnPasswordChange();
     prepareEventOnRepeatPasswordChange();
 
-    let registrationForm = document.getElementById("registration-form");
+    let recoveryForm = document.getElementById("recovery-form");
 
-    registrationForm.addEventListener("submit", function (event) {
+    recoveryForm.addEventListener("submit", function (event) {
         event.preventDefault();
 
         if(isFormOK()) {
@@ -36,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
                 if (document.getElementById("correctRegister") !== null) {
                     window.location = "/";
                 }
-            }, 2000);
+            }, 4000);
         }
     });
 
@@ -49,24 +39,12 @@ document.addEventListener('DOMContentLoaded', function (event) {
         } else {
             removeWarningMessage(emptyFieldWaringElemId);
         }
-        let nameWarningElemId = document.getElementById("nameWarning");
-        let surnameWarningElemId = document.getElementById("surnameWarning");
-        let birthDateYearWarningElemId = document.getElementById("yearWarning");
-        let emailWarningElemId = document.getElementById("emailWarning");
-        let loginAvailabilityWarningElemId = document.getElementById("availableLoginWarning");
-        let loginValidityWarningElemId = document.getElementById("validLoginWarning");
         let passwordWarningElemId = document.getElementById("passwordWarning");
         let repeatPasswordWarningElemId = document.getElementById("repeatPasswordWarning");
 
         
 
-        if( nameWarningElemId === null &&
-            surnameWarningElemId === null &&
-            birthDateYearWarningElemId === null &&
-            loginAvailabilityWarningElemId === null &&
-            emailWarningElemId === null &&
-            loginValidityWarningElemId === null &&
-            passwordWarningElemId === null &&
+        if( passwordWarningElemId === null &&
             repeatPasswordWarningElemId === null) {
             return true;
         } else {
@@ -75,13 +53,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }
 
     function isAnyInputEmpty() {
-        if (
-            document.getElementById(NAME_FIELD_ID).value === "" ||
-            document.getElementById(SURNAME_FIELD_ID).value === "" ||
-            document.getElementById(BIRTH_DATE_FIELD_ID).value === "" ||
-            document.getElementById(EMAIL_FIELD_ID).value === "" ||
-            document.getElementById(LOGIN_FIELD_ID).value === "" ||
-            document.getElementById(PASSWORD_FIELD_ID).value === "" ||
+        if (document.getElementById(PASSWORD_FIELD_ID).value === "" ||
             document.getElementById(REPEAT_PASSWORD_FIELD_ID).value === ""
         ) {
             return true;
@@ -90,11 +62,6 @@ document.addEventListener('DOMContentLoaded', function (event) {
         }
     }
 
-
-    function prepareEventOnLoginChange() {
-        let loginInput = document.getElementById(LOGIN_FIELD_ID);
-        loginInput.addEventListener("change", updateLoginAvailabilityMessage);
-    }
 
     function prepareEventOnPasswordChange() {
         let passwordInput = document.getElementById(PASSWORD_FIELD_ID);
@@ -106,50 +73,6 @@ document.addEventListener('DOMContentLoaded', function (event) {
     function prepareEventOnRepeatPasswordChange() {
         let repeatPasswordInput = document.getElementById(REPEAT_PASSWORD_FIELD_ID);
         repeatPasswordInput.addEventListener("change", updateRepeatPasswordValidityMessage);
-    }
-
-    function prepareEventOnDateChange() {
-        let dateInput = document.getElementById(BIRTH_DATE_FIELD_ID);
-        dateInput.addEventListener("change", updateDateValidityMessage);
-    }
-
-    function prepareEventOnNameChange() {
-        let name = document.getElementById(NAME_FIELD_ID);
-        name.addEventListener("change", updateNameValidityMessage);
-    }
-
-    function prepareEventOnSurnameChange() {
-        let surname = document.getElementById(SURNAME_FIELD_ID);
-        surname.addEventListener("change", updateSurnameValidityMessage);
-    }
-
-    function prepareEventOnEmailChange() {
-        let email = document.getElementById(EMAIL_FIELD_ID);
-        email.addEventListener("change", updateEmailValidityMessage);
-    }
-
-    function updateLoginAvailabilityMessage() {
-        let availabilityWarningElemId = "availableLoginWarning";
-        let validityWarningElemId = "validLoginWarning";
-        let loginTakenWarningMessage = "Ten login jest już zajęty.";
-        let wrongLoginFormatWarningMessage = "Login musi składać się z 5 znaków i zawierać tylko litery."
-
-        isLoginAvailable().then(function (isAvailable) {
-            if (isAvailable) {
-                removeWarningMessage(availabilityWarningElemId);
-            } else {
-                showWarningMessage(availabilityWarningElemId, loginTakenWarningMessage, LOGIN_FIELD_ID);
-            }
-        }).catch(function (error) {
-            console.error("Something went wrong while checking login.");
-            console.error(error);
-        });
-
-        if (isLoginValid() === true) {
-            removeWarningMessage(validityWarningElemId);
-        } else {
-            showWarningMessage(validityWarningElemId, wrongLoginFormatWarningMessage, LOGIN_FIELD_ID)
-        }
     }
 
     function showWarningMessage(newElemId, message, textBoxId) {
@@ -190,38 +113,12 @@ document.addEventListener('DOMContentLoaded', function (event) {
         currentElem.insertAdjacentElement('afterend', newElem);
     }
 
-    function isLoginAvailable() {
-        return Promise.resolve(checkLoginAvailability().then(function (statusCode) {
-            if (statusCode === HTTP_STATUS.OK) {
-                return false;
-
-            } else if (statusCode === HTTP_STATUS.NOT_FOUND) {
-                return true;
-
-            } else {
-                throw "Unknown login availability status: " + statusCode;
-            }
-        }));
-    }
-
-    function checkLoginAvailability() {
-        let loginInput = document.getElementById(LOGIN_FIELD_ID);
-        let baseUrl = URL + "register/";
-        let userUrl = baseUrl + loginInput.value;
-
-        return Promise.resolve(fetch(userUrl, {method: GET}).then(function (resp) {
-            return resp.status;
-        }).catch(function (err) {
-            return err.status;
-        }));
-    }
-
     function submitRegisterForm() {
-        let registerUrl = URL + "register_new_user";
+        let registerUrl = URL + "reset_password/" + token_url;
 
         let registerParams = {
             method: POST,
-            body: new FormData(registrationForm),
+            body: new FormData(recoveryForm),
             redirect: "follow"
         };
 
@@ -248,9 +145,9 @@ document.addEventListener('DOMContentLoaded', function (event) {
         let status = correctResponse.status;
         console.log("status " + status)
         let correctRegisterInfo = "correctRegister";
-        let sucessMessage = "Użytkownik został zarejestrowany pomyślnie. Zaraz nastąpi przekierowanie.";
+        let sucessMessage = "Hasło zostało zmienione poprawnie. Zaraz nastąpi przekierowanie.";
         let warningRegisterInfo = "unsuccessfulRegister";
-        let warningMessage = "Podczas rejstracji wystąpił błąd.";
+        let warningMessage = "Podczas zmiany hasła wystąpił błąd. Wygeneruj nowy link.";
 
         if (status !== HTTP_STATUS.CREATED) {
             removeWarningMessage(correctRegisterInfo);
@@ -303,74 +200,6 @@ document.addEventListener('DOMContentLoaded', function (event) {
             return true;
         } else {
             return false;
-        }
-    }
-
-    function isLoginValid() {
-        let regExpression = /^[A-Za-z]+$/;
-        let login = document.getElementById(LOGIN_FIELD_ID);
-        if (login.value.match(regExpression) && login.value.length > 4) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    function updateDateValidityMessage() {
-        let warningYearElemId = "yearWarning";
-        let warningYearMessage = "Podany rok nie jest prawidłowy. Musi zawierać się od 1900 do roku obecnego.";
-        let warningDateElemId = "dateWarning";
-
-        if (document.getElementById(BIRTH_DATE_FIELD_ID).value !== undefined){
-            removeWarningMessage(warningDateElemId);
-        }
-        let birthDate = new Date(document.getElementById(BIRTH_DATE_FIELD_ID).value);
-        year = birthDate.getFullYear();
-    
-        if (year > 1900 && year < new Date().getFullYear()) {
-            removeWarningMessage(warningYearElemId);
-        } else {
-            showWarningMessage(warningYearElemId, warningYearMessage, BIRTH_DATE_FIELD_ID);
-        }
-    }
-
-
-    function updateNameValidityMessage() {
-        let warningElemId = "nameWarning";
-        let warningMessage = "To pole nie może być puste i musi składać się wyłącznie z liter.";
-        let name = document.getElementById(NAME_FIELD_ID).value;
-        let regExpression = /^[A-Za-ząćęłńóśźżĄĘŁŃÓŚŹŻ]+$/;
-
-        if (name.match(regExpression)) {
-            removeWarningMessage(warningElemId);
-        } else {
-            showWarningMessage(warningElemId, warningMessage, NAME_FIELD_ID);
-        }
-    }
-
-    function updateSurnameValidityMessage() {
-        let warningElemId = "surnameWarning";
-        let warningMessage = "To pole nie może być puste i musi składać się wyłącznie z liter.";
-        let surname = document.getElementById(SURNAME_FIELD_ID).value;
-        let regExpression = /^[A-Za-ząćęłńóśźżĄĘŁŃÓŚŹŻ]+$/;
-
-        if (surname.match(regExpression)) {
-            removeWarningMessage(warningElemId);
-        } else {
-            showWarningMessage(warningElemId, warningMessage, SURNAME_FIELD_ID);
-        }
-    }
-
-    function updateEmailValidityMessage() {
-        let warningElemId = "emailWarning";
-        let warningMessage = "Proszę podać poprawny adres email.";
-        let email = document.getElementById(EMAIL_FIELD_ID).value;
-        let regExpression = /\S+@\S+\.\S+/;
-
-        if (email.match(regExpression)) {
-            removeWarningMessage(warningElemId);
-        } else {
-            showWarningMessage(warningElemId, warningMessage, EMAIL_FIELD_ID);
         }
     }
 

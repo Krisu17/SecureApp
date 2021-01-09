@@ -2,7 +2,7 @@ import mysql.connector as mariadb
 import os
 
 MYSQL_ROOT_PASSWORD = "MYSQL_ROOT_PASSWORD"
-db = mariadb.connect(host="mariadb", user="root", password="root")  # os.environ.get(ROOT_PASSWORD)
+db = mariadb.connect(host="mariadb", user="root", password=os.environ.get(MYSQL_ROOT_PASSWORD))  # 
 sql = db.cursor()
 sql.execute("DROP DATABASE IF EXISTS db;")
 sql.execute("CREATE DATABASE db;")
@@ -32,3 +32,9 @@ sql.execute("DELETE FROM security_table;")
 sql.execute("DROP TABLE IF EXISTS blocked;")
 sql.execute("CREATE TABLE blocked (ip VARCHAR(32), until DATETIME);")
 sql.execute("DELETE FROM blocked;")
+
+sql.execute("DROP TABLE IF EXISTS reset_urls;")
+sql.execute("CREATE TABLE reset_urls (login VARCHAR(32), url VARCHAR(128), until DATETIME);")
+sql.execute("DELETE FROM reset_urls;")
+sql.execute("INSERT INTO reset_urls (login, url, until) VALUES ('Janek', 'zH7vXpjwqbENDQuxsnthVoBo5witkkCgZpT3nIDVKAIB71lYItnl6WmADH2pfsVqkcAbY0B7m1ymK78ResbPvA', NOW() + INTERVAL 10 MINUTE)")
+db.commit()

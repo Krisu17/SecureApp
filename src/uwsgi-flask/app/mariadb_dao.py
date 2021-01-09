@@ -15,7 +15,7 @@ class MariaDBDAO:
 
   def connect(self, host, user, password):
     try:
-      db = mariadb.connect(host=host,user="root",password="root")
+      db = mariadb.connect(host=host,user=user,password=password)
       sql = db.cursor(buffered=True)
       sql.execute("USE mysql")
       sql.execute("SELECT 1")
@@ -44,7 +44,7 @@ class MariaDBDAO:
     self.db = None
     self.sql = None
     while self.db is None:
-      self.db = self.connect(hostname, "root", "root")
+      self.db = self.connect(hostname, "root", os.environ.get(MYSQL_ROOT_PASSWORD))
     while self.sql is None:
       self.sql = self.choose_database("db")
     print("Connected to MariaDB")
@@ -53,6 +53,14 @@ class MariaDBDAO:
     try:
       self.deny_semicolon(login, crypted_password, name, surname, email, birthDate)
       self.sql.execute(f"INSERT INTO users (login, password, name, surname, email, birthDate) VALUES ('{login}', '{crypted_password}', '{name}', '{surname}', '{email}', '{birthDate}')")
+      self.db.commit()
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+
+  def setNewPassword(self, login, crypted_password):
+    try:
+      self.deny_semicolon(login, crypted_password)
+      self.sql.execute(f"UPDATE users SET password = '{crypted_password}' WHERE login = '{login}'")
       self.db.commit()
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
@@ -124,6 +132,43 @@ class MariaDBDAO:
       flask.flash(f"Database error: {err}")
     return None
 
+  def fetchAll(self):
+    self.sql.execute(f"SELECT * FROM reset_urls")
+    all, = self.sql.fetchmany() or (None,)
+    return all
+
+
+  def returnLoginToPassRecovery(self, birthDate, email):
+    try:
+      self.deny_semicolon(birthDate, email)
+      self.sql.execute(f"SELECT login FROM users WHERE birthDate = '{birthDate}' AND email = '{email}'")
+      login, = self.sql.fetchone() or (None,)
+      return login
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return None
+
+  def addSafeUrl(self, login, url):
+    try:
+      self.sql.execute(f"SELECT login FROM reset_urls WHERE login = '{login}'")
+      login, = self.sql.fetchone() or (None,)
+      if(login is None):
+        self.sql.execute(f"INSERT INTO reset_urls (login, url, until) VALUES ('{login}', '{url}', NOW() + INTERVAL 10 MINUTE)")
+      else:
+        self.sql.execute(f"UPDATE reset_urls SET url = '{url}' WHERE login = '{login}'")
+        self.sql.execute(f"UPDATE reset_urls SET until = NOW() + INTERVAL 10 MINUTE WHERE login = '{login}'")
+      self.db.commit()
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}") 
+
+  def ifCorrectReturnLoginToPassRecovery(self, url):
+    try:
+      self.deny_semicolon(url)
+      self.sql.execute(f"SELECT login FROM reset_urls WHERE url = '{url}' AND until > NOW()")
+      login, = self.sql.fetchone() or (None,)
+      return login
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}") 
 
   def get_login(self, sid):
     try:
