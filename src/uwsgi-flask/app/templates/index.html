@@ -19,7 +19,7 @@
             <li><a href="/">Strona główna</a></li>
             {% if isValidCookie %}
             <li><a href="/add_note">Dodaj notatkę</a></li>
-            <li><a href="/show_notes">Moje notatki</a></li>
+            <li><a href="/notes">Moje notatki</a></li>
             <li><a href="/logout">Wyloguj się</a></li>
             {% else %}
             <li><a href="/register">Zarejestuj się</a></li>
@@ -41,7 +41,7 @@
             <div class="card-body">
                 <h5 class="card-title">Dodaj notatkę</h5>
                 <p class="card-text">Dodaj nową, bezpieczną notatkę. Będziesz mógł ją też zaszyfrować, albo upublicznić.</p>
-                <a href="/login" class="btn btn-primary stretched-link" >Przejdź</a>
+                <a href="/add_note" class="btn btn-primary stretched-link" >Przejdź</a>
             </div>
 
         </div>
@@ -51,7 +51,7 @@
             <div class="card-body">
                 <h5 class="card-title">Moje notatki</h5>
                 <p class="card-text">Zobacz wszystkie swoje notatki oraz notatki udostępnione publicznie.</p>
-                <a href="/register" class="btn btn-primary stretched-link">Przejdź</a>
+                <a href="/notes" class="btn btn-primary stretched-link">Przejdź</a>
             </div>
 
         </div>

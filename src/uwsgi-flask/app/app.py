@@ -54,6 +54,17 @@ def register():
     response.headers['server'] = None
     return response
 
+@app.route('/add_note', methods=[GET])
+def add():
+    if ('username' in session.keys()):
+        isValidCookie = True
+        response = make_response(render_template("add.html", isValidCookie=isValidCookie))
+        response.headers['server'] = None
+        return response
+    else:
+        abort(403)
+    
+
 @app.route('/password_recovery', methods=[GET])
 def password_recovery():
     response = make_response(render_template("password_recovery.html"))
@@ -220,4 +231,31 @@ def login_user():
             response = make_response("User is blocked", 403)
             response.headers['server'] = None
             return response
+
+
+
+@app.errorhandler(400)
+def bad_request(error):
+    response = make_response(render_template("400.html", error=error))
+    return response
+
+@app.errorhandler(401)
+def unauthorized(error):
+    response = make_response(render_template("401.html", error=error))
+    return response
+
+@app.errorhandler(403)
+def forbidden(error):
+    response = make_response(render_template("403.html", error=error))
+    return response
+
+@app.errorhandler(404)
+def page_not_found(error):
+    response = make_response(render_template("404.html", error=error))
+    return response
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    response = make_response(render_template("500.html", error=error))
+    return response
 
