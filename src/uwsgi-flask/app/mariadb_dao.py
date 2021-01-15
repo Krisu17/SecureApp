@@ -81,7 +81,7 @@ class MariaDBDAO:
         self.sql.execute(f"INSERT INTO security_table (ip, attemps, last) VALUES ('{ip}', 1, NOW())")
         self.db.commit()
       else:  
-        self.sql.execute(f"SELECT attemps FROM security_table WHERE ip = '{ip}' AND last + INTERVAL 5 MINUTE > NOW()")
+        self.sql.execute(f"SELECT attemps FROM security_table WHERE ip = '{ip}' AND last > NOW() - INTERVAL 5 MINUTE")
         attemps, = self.sql.fetchone() or (None,)
         if(attemps is None):
           self.sql.execute(f"UPDATE security_table SET attemps = 1 WHERE ip = '{ip}'")
@@ -97,7 +97,7 @@ class MariaDBDAO:
         return True
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
-      return False
+      return err
 
   def blockUser(self, ip):
     try:
@@ -133,15 +133,18 @@ class MariaDBDAO:
     return None
 
   def fetchAll(self):
-    self.sql.execute(f"SELECT * FROM reset_urls")
-    all, = self.sql.fetchmany() or (None,)
-    return all
+    # self.sql.execute("DELETE FROM reset_urls")
+    # self.db.commit()
+    self.sql.execute(f"SELECT * FROM public_notes")
+    notes = self.sql.fetchall()
+    return notes
 
 
-  def returnLoginToPassRecovery(self, birthDate, email):
+
+  def returnLoginToPassRecovery(self, login, birthDate, email):
     try:
-      self.deny_semicolon(birthDate, email)
-      self.sql.execute(f"SELECT login FROM users WHERE birthDate = '{birthDate}' AND email = '{email}'")
+      self.deny_semicolon(birthDate, email, login)
+      self.sql.execute(f"SELECT login FROM users WHERE birthDate = '{birthDate}' AND email = '{email}' AND login = '{login}'")
       login, = self.sql.fetchone() or (None,)
       return login
     except mariadb.Error as err:
@@ -151,22 +154,29 @@ class MariaDBDAO:
   def addSafeUrl(self, login, url):
     try:
       self.sql.execute(f"SELECT login FROM reset_urls WHERE login = '{login}'")
-      login, = self.sql.fetchone() or (None,)
-      if(login is None):
+      fetchLogin, = self.sql.fetchone() or (None,)
+      print("Fetch LOGIN:")
+      print(fetchLogin)
+      if(login != fetchLogin):
         self.sql.execute(f"INSERT INTO reset_urls (login, url, until) VALUES ('{login}', '{url}', NOW() + INTERVAL 10 MINUTE)")
+        print("added new")
       else:
         self.sql.execute(f"UPDATE reset_urls SET url = '{url}' WHERE login = '{login}'")
         self.sql.execute(f"UPDATE reset_urls SET until = NOW() + INTERVAL 10 MINUTE WHERE login = '{login}'")
+        print("added new")
       self.db.commit()
+      return 0
     except mariadb.Error as err:
-      flask.flash(f"Database error: {err}") 
+      flask.flash(f"Database error: {err}")
+      return 1
+
 
   def ifCorrectReturnLoginToPassRecovery(self, url):
     try:
       self.deny_semicolon(url)
       self.sql.execute(f"SELECT login FROM reset_urls WHERE url = '{url}' AND until > NOW()")
-      login, = self.sql.fetchone() or (None,)
-      return login
+      login = self.sql.fetchone()
+      return login[0]
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}") 
 
@@ -198,6 +208,22 @@ class MariaDBDAO:
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
 
+  def setNewPublicNote(self, login, title, text, iv, salt):
+    try:
+      self.deny_semicolon(login, title, text, iv, salt)
+      self.sql.execute(f"INSERT INTO public_notes (login, title, text, iv, salt) VALUES ('{login}', '{title}', '{text}', '{iv}', '{salt}')")
+      self.db.commit()
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+
+  def setNewPrivateNote(self, login, title, text, iv, salt):
+    try:
+      self.deny_semicolon(login, title, text, iv, salt)
+      self.sql.execute(f"INSERT INTO notes (login, title, text, iv, salt) VALUES ('{login}', '{title}', '{text}', '{iv}', '{salt}')")
+      self.db.commit()
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+
   def add_post(self, login, post):
     try:
       self.deny_semicolon(login, post)
@@ -205,6 +231,155 @@ class MariaDBDAO:
       self.db.commit()
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
+
+  def getIvFromPublicNote(self, id):
+    try:
+      self.deny_semicolon(id)
+      self.sql.execute(f"SELECT iv FROM public_notes WHERE id = '{id}'")
+      iv, = self.sql.fetchone() or (None,)
+      return iv
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+      return None
+
+  def getSaltFromPublicNote(self, id):
+    try:
+      self.deny_semicolon(id)
+      self.sql.execute(f"SELECT salt FROM public_notes WHERE id = '{id}'")
+      salt, = self.sql.fetchone() or (None,)
+      return salt
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+      return None
+
+  def getTextFromPublicNote(self, id):
+    try:
+      self.deny_semicolon(id)
+      self.sql.execute(f"SELECT text FROM public_notes WHERE id = '{id}'")
+      text, = self.sql.fetchone() or (None,)
+      return text
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+      return None
+
+  def getIvFromPrivateNote(self, id, user):
+    try:
+      self.deny_semicolon(id, user)
+      self.sql.execute(f"SELECT iv FROM notes WHERE id = '{id}' AND login = '{user}'")
+      iv, = self.sql.fetchone() or (None,)
+      return iv
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+      return None
+
+  def getSaltFromPrivateNote(self, id, user):
+    try:
+      self.deny_semicolon(id, user)
+      self.sql.execute(f"SELECT salt FROM notes WHERE id = '{id}' AND login = '{user}'")
+      salt, = self.sql.fetchone() or (None,)
+      return salt
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+      return None
+
+  def getTextFromPrivateNote(self, id, user):
+    try:
+      self.deny_semicolon(id, user)
+      self.sql.execute(f"SELECT text FROM notes WHERE id = '{id}' AND login = '{user}'")
+      text, = self.sql.fetchone() or (None,)
+      return text
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+      return None
+
+
+  def getPublicNotesId(self):
+    try:
+        self.sql.execute(f"SELECT id FROM public_notes ORDER BY id DESC")
+        notes = self.sql.fetchall()
+        if len(notes) == 0:
+          return ["(nie masz postów)"]
+        return [note for note, in notes]
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return []
+
+  def getPublicNotesLogin(self):
+    try:
+        self.sql.execute(f"SELECT login FROM public_notes ORDER BY id DESC")
+        notes = self.sql.fetchall()
+        if len(notes) == 0:
+          return ["(nie masz postów)"]
+        return [note for note, in notes]
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return []
+
+  def getPublicNotesTitle(self):
+    try:
+        self.sql.execute(f"SELECT title FROM public_notes ORDER BY id DESC")
+        notes = self.sql.fetchall()
+        if len(notes) == 0:
+          return ["(nie masz postów)"]
+        return [note for note, in notes]
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return []
+  
+  def getPublicNotesText(self):
+    try:
+        self.sql.execute(f"SELECT text FROM public_notes ORDER BY id DESC")
+        notes = self.sql.fetchall()
+        if len(notes) == 0:
+          return ["(nie masz postów)"]
+        return [note for note, in notes]
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return []
+
+  def getPrivateNotesId(self, login):
+    try:
+        self.sql.execute(f"SELECT id FROM notes WHERE login = '{login}' ORDER BY id DESC")
+        notes = self.sql.fetchall()
+        if len(notes) == 0:
+          return ["(nie masz postów)"]
+        return [note for note, in notes]
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return []
+
+  def getPrivateNotesLogin(self, login):
+    try:
+        self.sql.execute(f"SELECT login FROM notes WHERE login = '{login}' ORDER BY id DESC")
+        notes = self.sql.fetchall()
+        if len(notes) == 0:
+          return ["(nie masz postów)"]
+        return [note for note, in notes]
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return []
+
+  def getPrivateNotesTitle(self, login):
+    try:
+        self.sql.execute(f"SELECT title FROM notes WHERE login = '{login}' ORDER BY id DESC")
+        notes = self.sql.fetchall()
+        if len(notes) == 0:
+          return ["(nie masz postów)"]
+        return [note for note, in notes]
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return []
+  
+  def getPrivateNotesText(self, login):
+    try:
+        self.sql.execute(f"SELECT text FROM notes WHERE login = '{login}' ORDER BY id DESC")
+        notes = self.sql.fetchall()
+        if len(notes) == 0:
+          return ["(nie masz postów)"]
+        return [note for note, in notes]
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return []
 
   def get_posts(self, login):
     try:

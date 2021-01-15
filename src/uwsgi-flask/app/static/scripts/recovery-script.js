@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     const POST = "POST";
     const URL = "https://localhost/";
 
+    const LOGIN_FIELD_ID = "login";
     const BIRTH_DATE_FIELD_ID = "birthDate";
     const EMAIL_FIELD_ID = "email";
     const SUBMIT_BUTTON_ID = "button-pass-rec";
@@ -10,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
 
     var HTTP_STATUS = {OK: 200, CREATED: 201, BAD_REQUEST: 400, NOT_FOUND: 404};
 
+    prepareEventOnLoginChange();
     prepareEventOnDateChange();
     prepareEventOnEmailChange();
 
@@ -57,6 +59,10 @@ document.addEventListener('DOMContentLoaded', function (event) {
         }
     }
 
+    function prepareEventOnLoginChange() {
+        let loginInput = document.getElementById(LOGIN_FIELD_ID);
+        loginInput.addEventListener("change", updateLoginAvailabilityMessage);
+    }
 
     function prepareEventOnDateChange() {
         let dateInput = document.getElementById(BIRTH_DATE_FIELD_ID);
@@ -141,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
         let correctRegisterInfo = "correctRegister";
         let sucessMessage = "Jeżeli podałeś poprawne dane, email z linkem aktywacyjnym został wysłany na podany powyżej adres korespondencyjny. Link będzie ważny tylko 10 minut.";
         let warningRegisterInfo = "unsuccessfulRegister";
-        let warningMessage = "Podczas rejstracji wystąpił błąd.";
+        let warningMessage = "Podczas odzyskiwania wystąpił błąd.";
 
         if (status !== HTTP_STATUS.OK) {
             removeWarningMessage(correctRegisterInfo);
@@ -153,6 +159,15 @@ document.addEventListener('DOMContentLoaded', function (event) {
         }
     }
 
+    function updateLoginAvailabilityMessage() {
+        let validityWarningElemId = "validLoginWarning";
+        let wrongLoginFormatWarningMessage = "Login musi składać się z 5 znaków i zawierać tylko litery."
+        if (isLoginValid() === true) {
+            removeWarningMessage(validityWarningElemId);
+        } else {
+            showWarningMessage(validityWarningElemId, wrongLoginFormatWarningMessage, LOGIN_FIELD_ID)
+        }
+    }
 
     function updateDateValidityMessage() {
         let warningYearElemId = "yearWarning";
@@ -177,12 +192,22 @@ document.addEventListener('DOMContentLoaded', function (event) {
         let warningElemId = "emailWarning";
         let warningMessage = "Proszę podać poprawny adres email.";
         let email = document.getElementById(EMAIL_FIELD_ID).value;
-        let regExpression = /\S+@\S+\.\S+/;
+        let regExpression = /^[a-z0-9A-Z]+[\._]?[a-z0-9A-Z]+[@]\w+[.]\w{2,3}$/;
 
         if (email.match(regExpression)) {
             removeWarningMessage(warningElemId);
         } else {
             showWarningMessage(warningElemId, warningMessage, EMAIL_FIELD_ID);
+        }
+    }
+
+    function isLoginValid() {
+        let regExpression = /^[A-Za-z]{5,32}$/;
+        let login = document.getElementById(LOGIN_FIELD_ID);
+        if (login.value.match(regExpression) && login.value.length > 4) {
+            return true;
+        } else {
+            return false;
         }
     }
 

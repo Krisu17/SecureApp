@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
 
     function updatePasswordValidityMessage() {
         let warningElemId = "passwordWarning";
-        let warningMessage = "Co najmniej 8 znaków, mała i duża litera oraz znak specjalny.";
+        let warningMessage = "Co najmniej 8 znaków(do 32), mała i duża litera oraz znak specjalny.";
 
         if (isPasswordValid() === true) {
             removeWarningMessage(warningElemId);
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }
 
     function isPasswordValid() {
-        let regExpression = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#\$%\^&\*]).{8,}$/;
+        let regExpression = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#\$%\^&\*]).{8,32}$/;
         let password = document.getElementById(PASSWORD_FIELD_ID);
         if (password.value.match(regExpression)) {
             return true;
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }
 
     function isLoginValid() {
-        let regExpression = /^[A-Za-z]+$/;
+        let regExpression = /^[A-Za-z]{5,32}$/;
         let login = document.getElementById(LOGIN_FIELD_ID);
         if (login.value.match(regExpression) && login.value.length > 4) {
             return true;
@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
         let warningElemId = "nameWarning";
         let warningMessage = "To pole nie może być puste i musi składać się wyłącznie z liter.";
         let name = document.getElementById(NAME_FIELD_ID).value;
-        let regExpression = /^[A-Za-ząćęłńóśźżĄĘŁŃÓŚŹŻ]+$/;
+        let regExpression = /^[A-Za-ząćęłńóśźżĄĘŁŃÓŚŹŻ]{1,32}$/;
 
         if (name.match(regExpression)) {
             removeWarningMessage(warningElemId);
@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
         let warningElemId = "surnameWarning";
         let warningMessage = "To pole nie może być puste i musi składać się wyłącznie z liter.";
         let surname = document.getElementById(SURNAME_FIELD_ID).value;
-        let regExpression = /^[A-Za-ząćęłńóśźżĄĘŁŃÓŚŹŻ]+$/;
+        let regExpression = /^[A-Za-ząćęłńóśźżĄĘŁŃÓŚŹŻ]{1,32}$/;
 
         if (surname.match(regExpression)) {
             removeWarningMessage(warningElemId);
@@ -365,7 +365,8 @@ document.addEventListener('DOMContentLoaded', function (event) {
         let warningElemId = "emailWarning";
         let warningMessage = "Proszę podać poprawny adres email.";
         let email = document.getElementById(EMAIL_FIELD_ID).value;
-        let regExpression = /\S+@\S+\.\S+/;
+        let regExpression = /^[a-z0-9A-Z]+[\._]?[a-z0-9A-Z]+[@]\w+[.]\w{2,3}$/;
+        // let regExpression = /\S+@\S+\.\S+/;
 
         if (email.match(regExpression)) {
             removeWarningMessage(warningElemId);

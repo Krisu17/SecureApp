@@ -2,3 +2,4 @@ flask
 uwsgi
 mysql-connector
 py-bcrypt
+pycryptodomex
