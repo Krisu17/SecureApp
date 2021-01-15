@@ -3,8 +3,10 @@ from flask import Flask, render_template, send_file, request, jsonify, redirect,
 from flask_wtf.csrf import CSRFProtect
 import hashlib
 import bcrypt
+from uuid import uuid4
 from base64 import b64decode, b64encode
 import json
+from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from .mariadb_dao import MariaDBDAO
 from secrets import token_urlsafe
@@ -21,7 +23,9 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SECURE"] = True
 app.secret_key = os.environ.get(APP_SECRET)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=300)
+app.config['UPLOAD_FOLDER'] = "./app/files"
 csrf = CSRFProtect(app)
+ACCEPT_EXTENSIONS = {'jpg', 'png', 'jpeg', 'txt', 'pdf'}
 
 dao = MariaDBDAO("mariadb")
 
@@ -76,13 +80,15 @@ def notes():
             privateNotesLogin = dao.getPrivateNotesLogin(login)
             privateNotesTitle = dao.getPrivateNotesTitle(login)
             privateNotesText = dao.getPrivateNotesText(login)
+            privateNotesFilename = dao.getPrivateNotesFilename(login)
 
             publicNotesId = dao.getPublicNotesId()
             publicNotesLogin = dao.getPublicNotesLogin()
             publicNotesTitle = dao.getPublicNotesTitle()
             publicNotesText = dao.getPublicNotesText()
+            publicNotesFilename = dao.getPublicNotesFilename()
 
-            response = make_response(render_template("notes.html", isValidCookie=isValidCookie, privateNotesId=privateNotesId, privateNotesLogin=privateNotesLogin, privateNotesText=privateNotesText, privateNotesTitle=privateNotesTitle, publicNotesId=publicNotesId, publicNotesLogin=publicNotesLogin, publicNotesText=publicNotesText, publicNotesTitle = publicNotesTitle))
+            response = make_response(render_template("notes.html", isValidCookie=isValidCookie, privateNotesId=privateNotesId, privateNotesLogin=privateNotesLogin, privateNotesText=privateNotesText, privateNotesTitle=privateNotesTitle, publicNotesId=publicNotesId, publicNotesLogin=publicNotesLogin, publicNotesText=publicNotesText, publicNotesTitle = publicNotesTitle, privateNotesFilename=privateNotesFilename, publicNotesFilename=publicNotesFilename))
             return response
         
         else:
@@ -125,15 +131,27 @@ def add_new_note():
             password = ""
             iv = ""
             salt = ""
+            filename = ""
+            uuidFileNameSecure = ""
+            if(file is not None):
+                fileExtension = file.filename.rsplit('.', 1)[1].lower()
+                if(isFileExtensionAllowed(fileExtension)):
+                    filename = file.filename
+                    uuidFileName = str(uuid4()) + '.' + fileExtension
+                    uuidFileNameSecure = secure_filename(uuidFileName)
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], uuidFileNameSecure))
+                else:
+                    response = make_response("Bad request", 400)
+                    return response
             if (isWithPassword == "on"):
                 password = noteForm.get("password")
                 [text, iv, salt] = encode_text_from_note(text, password)
             if(isPublic == "on"):
                 print("Adding new public note")
-                dao.setNewPublicNote(login, title, text, iv, salt)
+                dao.setNewPublicNote(login, title, text, iv, salt, filename, uuidFileNameSecure)
             else:
                 print("Adding new private note")
-                dao.setNewPrivateNote(login, title, text, iv, salt)
+                dao.setNewPrivateNote(login, title, text, iv, salt, filename, uuidFileNameSecure)
             response = make_response("Note added", 201)
             return response
         else:
@@ -144,6 +162,12 @@ def add_new_note():
         print(e)
         response = make_response("Bad request", 400)
         return response
+
+def isFileExtensionAllowed(fileExtension):
+    if(fileExtension in ACCEPT_EXTENSIONS):
+        return True
+    else:
+        return False
 
 @app.route('/decode_note', methods=[POST])
 def decode_note():
@@ -228,9 +252,9 @@ def fetchall():
 def reset_urls(token_url):
     login = dao.ifCorrectReturnLoginToPassRecovery(token_url)
     print("Login z ifCorrect======================================")
-    print(login)
+    print(login[0])
     if(login is not None):
-        response = make_response(render_template("password_recovery_form.html", login=login, token_url=token_url))
+        response = make_response(render_template("password_recovery_form.html", login=login[0], token_url=token_url))
         return response
     return abort(404)
 
@@ -247,7 +271,7 @@ def reset_password_url(token_url):
         passwordHashedTriple = hashlib.sha256((passwordHashedTwice.hexdigest().encode('utf-8')))
         salt = bcrypt.gensalt()
         passwordBcrypted = bcrypt.hashpw(passwordHashedTriple.hexdigest().encode('utf-8'), salt) 
-        dao.setNewPassword(login, passwordBcrypted)
+        dao.setNewPassword(login[0], passwordBcrypted)
         del passwordHashedOnce
         del passwordHashedTwice
         del passwordHashedTriple

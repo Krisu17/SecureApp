@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     function isTitleValid() {
         let regExpression = /^[A-Za-z0-9]+$/;
         let title = document.getElementById(TITLE_FIELD_ID);
-        if (title.value.match(regExpression) && title.value.length > 2 && isSafeContent(title)) {
+        if (title.value.match(regExpression) && title.value.length > 2 && isSafeContent(title.value)) {
             return true;
         } else {
             return false;

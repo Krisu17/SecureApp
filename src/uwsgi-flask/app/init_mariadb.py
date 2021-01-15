@@ -20,14 +20,14 @@ sql.execute("DELETE FROM session;")
 db.commit()
 
 sql.execute("DROP TABLE IF EXISTS notes;")
-sql.execute("CREATE TABLE notes (id INT AUTO_INCREMENT, login VARCHAR(32), title VARCHAR(128), text VARCHAR(256), iv VARCHAR(32), salt VARCHAR(32), PRIMARY KEY(id));")
+sql.execute("CREATE TABLE notes (id INT AUTO_INCREMENT, login VARCHAR(32), title VARCHAR(128), text VARCHAR(256), iv VARCHAR(32), salt VARCHAR(32), filename VARCHAR(64), uuidFileName VARCHAR(64), PRIMARY KEY(id));")
 sql.execute("DELETE FROM notes;")
 db.commit()
 
 sql.execute("DROP TABLE IF EXISTS public_notes;")
-sql.execute("CREATE TABLE public_notes (id INT AUTO_INCREMENT, login VARCHAR(32), title VARCHAR(128), text VARCHAR(256), iv VARCHAR(32), salt VARCHAR(32), PRIMARY KEY(id));")
+sql.execute("CREATE TABLE public_notes (id INT AUTO_INCREMENT, login VARCHAR(32), title VARCHAR(128), text VARCHAR(256), iv VARCHAR(32), salt VARCHAR(32), filename VARCHAR(64), uuidFileName VARCHAR(64), PRIMARY KEY(id));")
 sql.execute("DELETE FROM public_notes;")
-sql.execute("INSERT INTO public_notes (login, title, text) VALUES ('bob', 'To jest sekret!', 'text sekretu publicznego');")
+sql.execute("INSERT INTO public_notes (login, title, text, filename) VALUES ('bob', 'To jest sekret!', 'text sekretu publicznego', '');")
 db.commit()
 
 sql.execute("DROP TABLE IF EXISTS security_table;")

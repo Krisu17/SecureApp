@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
         let warningRegisterInfo = "unsuccessfulRegister";
         let warningMessage = "Podczas zmiany hasła wystąpił błąd. Wygeneruj nowy link.";
 
-        if (status !== HTTP_STATUS.CREATED) {
+        if (status !== HTTP_STATUS.CREATED && status !== HTTP_STATUS.OK) {
             removeWarningMessage(correctRegisterInfo);
             showWarningMessage(warningRegisterInfo, warningMessage, SUBMIT_BUTTON_ID);
             console.log("Errors: " + correctResponse.errors);

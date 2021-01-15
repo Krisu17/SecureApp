@@ -4,3 +4,4 @@ mysql-connector
 py-bcrypt
 pycryptodomex
 flask_wtf
+Werkzeug==0.16.1

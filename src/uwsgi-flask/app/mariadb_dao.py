@@ -208,18 +208,18 @@ class MariaDBDAO:
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
 
-  def setNewPublicNote(self, login, title, text, iv, salt):
+  def setNewPublicNote(self, login, title, text, iv, salt, filename, uuidFileName):
     try:
-      self.deny_semicolon(login, title, text, iv, salt)
-      self.sql.execute(f"INSERT INTO public_notes (login, title, text, iv, salt) VALUES ('{login}', '{title}', '{text}', '{iv}', '{salt}')")
+      self.deny_semicolon(login, title, text, iv, salt, filename, uuidFileName)
+      self.sql.execute(f"INSERT INTO public_notes (login, title, text, iv, salt, filename, uuidFileName) VALUES ('{login}', '{title}', '{text}', '{iv}', '{salt}', '{filename}', '{uuidFileName}')")
       self.db.commit()
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
 
-  def setNewPrivateNote(self, login, title, text, iv, salt):
+  def setNewPrivateNote(self, login, title, text, iv, salt, filename, uuidFileName):
     try:
-      self.deny_semicolon(login, title, text, iv, salt)
-      self.sql.execute(f"INSERT INTO notes (login, title, text, iv, salt) VALUES ('{login}', '{title}', '{text}', '{iv}', '{salt}')")
+      self.deny_semicolon(login, title, text, iv, salt, filename, uuidFileName)
+      self.sql.execute(f"INSERT INTO notes (login, title, text, iv, salt, filename, uuidFileName) VALUES ('{login}', '{title}', '{text}', '{iv}', '{salt}', '{filename}', '{uuidFileName}')")
       self.db.commit()
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")
@@ -337,6 +337,17 @@ class MariaDBDAO:
       flask.flash(f"Database error: {err}")
     return []
 
+  def getPublicNotesFilename(self):
+    try:
+        self.sql.execute(f"SELECT filename FROM public_notes ORDER BY id DESC")
+        notes = self.sql.fetchall()
+        if len(notes) == 0:
+          return ["(nie masz plików)"]
+        return [note for note, in notes]
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return []
+
   def getPrivateNotesId(self, login):
     try:
         self.sql.execute(f"SELECT id FROM notes WHERE login = '{login}' ORDER BY id DESC")
@@ -376,6 +387,17 @@ class MariaDBDAO:
         notes = self.sql.fetchall()
         if len(notes) == 0:
           return ["(nie masz postów)"]
+        return [note for note, in notes]
+    except mariadb.Error as err:
+      flask.flash(f"Database error: {err}")
+    return []
+
+  def getPrivateNotesFilename(self, login):
+    try:
+        self.sql.execute(f"SELECT filename FROM notes WHERE login = '{login}' ORDER BY id DESC")
+        notes = self.sql.fetchall()
+        if len(notes) == 0:
+          return ["(nie masz plików)"]
         return [note for note, in notes]
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}")

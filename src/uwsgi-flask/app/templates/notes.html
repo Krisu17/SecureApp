@@ -40,6 +40,7 @@
                     <th class="price-table">Dodał</th>
                     <th class="price-table">Tytuł</th>
                     <th class="price-table">Treść</th>
+                    <th class="price-table">Plik</th>
                 </tr>
             </thead>
             <tbody class="my_notes_tbody">
@@ -49,6 +50,7 @@
                     <th class="download_th">{{privateNotesLogin[i]}}</th>
                     <th class="download_th">{{privateNotesTitle[i]}}</th>
                     <th class="download_th">{{privateNotesText[i]}}</th>
+                    <th class="download_th">{{privateNotesFilename[i]}}</th>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -64,6 +66,7 @@
                     <th class="price-table">Dodał</th>
                     <th class="price-table">Tytuł</th>
                     <th class="price-table">Treść</th>
+                    <th class="price-table">Plik</th>
                 </tr>
             </thead>
             <tbody class="public_notes_tbody">
@@ -73,6 +76,7 @@
                     <th class="download_th">{{publicNotesLogin[i]}}</th>
                     <th class="download_th">{{publicNotesTitle[i]}}</th>
                     <th class="download_th">{{publicNotesText[i]}}</th>
+                    <th class="download_th">{{publicNotesFilename[i]}}</th>
                 </tr>
                 {% endfor %}
             </tbody>
