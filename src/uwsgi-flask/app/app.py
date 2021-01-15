@@ -117,8 +117,6 @@ def add_new_note():
         noteForm = request.form
         isWithPassword = noteForm.get("secure_checkbox")
         isPublic = noteForm.get("checkbox_public")
-        print("Checkbox public status")
-        print(isPublic)
         if(noteForm.get("title") is None or
         noteForm.get("note_text") is None) :
             response = make_response("Bad request", 400)
@@ -133,7 +131,7 @@ def add_new_note():
             salt = ""
             filename = ""
             uuidFileNameSecure = ""
-            if(file is not None):
+            if(file):
                 fileExtension = file.filename.rsplit('.', 1)[1].lower()
                 if(isFileExtensionAllowed(fileExtension)):
                     filename = file.filename
@@ -147,10 +145,8 @@ def add_new_note():
                 password = noteForm.get("password")
                 [text, iv, salt] = encode_text_from_note(text, password)
             if(isPublic == "on"):
-                print("Adding new public note")
                 dao.setNewPublicNote(login, title, text, iv, salt, filename, uuidFileNameSecure)
             else:
-                print("Adding new private note")
                 dao.setNewPrivateNote(login, title, text, iv, salt, filename, uuidFileNameSecure)
             response = make_response("Note added", 201)
             return response
@@ -178,26 +174,21 @@ def decode_note():
             requestId = requestForm.get("id_decode")
             isPublic = requestForm.get("checkbox_public")
             login = session['username']
-            print(requestPassword)
-            print(requestId)
-            print(login)
             if(isIdNoteValid(requestId) and isPasswordValid(requestPassword)):
                 if(isPublic == "on"):
-                    print("Pobieranie publicznych")
                     iv = dao.getIvFromPublicNote(requestId)
                     salt = dao.getSaltFromPublicNote(requestId)
                     text = dao.getTextFromPublicNote(requestId)
                 else:
-                    print("Pobieranie prywatnych")
                     iv = dao.getIvFromPrivateNote(requestId, login)
                     salt = dao.getSaltFromPrivateNote(requestId, login)
                     text = dao.getTextFromPrivateNote(requestId, login)
-                    print(iv)
-                    print(salt)
-                    print(text)
-                if (iv is None or
-                salt is None or
-                text is None):
+                if (iv == "" or
+                salt == "" or
+                text == "" or 
+                iv == None or
+                salt == None or
+                text == None):
                     return jsonify({'message': 'Bad request'}), 400
                 iv = b64decode(iv)
                 text = b64decode(text)
@@ -208,7 +199,6 @@ def decode_note():
                     decryptedNote = unpad(aes.decrypt(text), AES.block_size).decode('utf-8')
                     return jsonify({'message': 'Succesfull decoding', 'text': decryptedNote}), 200
                 except ValueError:
-                    print("z errora wyjscie")
                     return jsonify({'message': 'Bad request'}), 400
         else:
             return jsonify({'message': 'Unauthorized'}), 401
@@ -242,17 +232,10 @@ def reset_password():
     response = make_response("OK", 200)
     return response
 
-@app.route("/fetchall")
-def fetchall():
-    all = dao.fetchAll()
-    print(all)
-    return ("OK",200)
 
 @app.route('/reset_urls/<string:token_url>', methods=[GET])
 def reset_urls(token_url):
     login = dao.ifCorrectReturnLoginToPassRecovery(token_url)
-    print("Login z ifCorrect======================================")
-    print(login[0])
     if(login is not None):
         response = make_response(render_template("password_recovery_form.html", login=login[0], token_url=token_url))
         return response
@@ -292,7 +275,6 @@ def logout():
 
 @app.route('/register_new_user', methods=[POST])
 def register_new_user():
-    print("Numero uno")
     registerForm = request.form
     if(registerForm.get("login") is None or
     registerForm.get("password") is None or
@@ -300,7 +282,6 @@ def register_new_user():
     registerForm.get("surname") is None or
     registerForm.get("email") is None or
     registerForm.get("birthDate") is None ) :
-        print("Pierwsze")
         response = make_response("Bad request", 400)
         return response
     if(isRegisterDataCorrect(registerForm)):
@@ -319,7 +300,6 @@ def register_new_user():
         response = make_response("User created", 201)
         return response
     else:
-        print("Drugie")
         response = make_response("Bad request", 400)
         return response
 
@@ -368,6 +348,13 @@ def login_user():
                 passwordHashedTriple = hashlib.sha256((passwordHashedTwice.hexdigest().encode('utf-8')))
                 if(bcrypt.checkpw(passwordHashedTriple.hexdigest().encode('utf-8'), cryptedPassFromDb.encode('utf-8'))):
                     dao.resetSecurityRecord(request.remote_addr)
+                    if (login == "admin":):
+                        print("-------------------------------------------------")
+                        print("-----------------UWAGA!!!!!----------------------")
+                        print("---------------Miało miejsce logowanie-----------")
+                        print("--------------na honey pot ----------------------")
+                        print("-----------------admin---------------------------")
+                        print("----------------ktoś hakuje aplikacje------------")
                     session['username'] = login
                     session.permanent = True
                     del passwordHashedOnce
@@ -380,8 +367,6 @@ def login_user():
                     response = make_response("Bad request", 400)
                     return response
             else:
-                print("Odp z bazy:")
-                print(dao.incrLoggingAttemps(request.remote_addr))
                 response = make_response("Bad request", 400)
                 return response
                 if(dao.incrLoggingAttemps(request.remote_addr)):

@@ -68,7 +68,6 @@ document.addEventListener('DOMContentLoaded', function (event) {
             idWarningElemId === null) {
             try {
                 let res = await tryDecodeNote();
-                console.log(res);
                 if (document.getElementById("correctDecoding") !== null) {
                     displayDecodedNote(res);
                 }

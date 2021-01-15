@@ -199,8 +199,6 @@ document.addEventListener('DOMContentLoaded', function (event) {
         let warningMessage = "Tekst nie może zawierać niebezpiecznych znaków";
         text = document.getElementById(NOTE_TEXT_FIEL_ID);
 
-        console.log(text.value)
-        console.log(isSafeContent(text.value))
         if (isSafeContent(text.value) === true) {
             removeWarningMessage(warningElemId);
         } else {
