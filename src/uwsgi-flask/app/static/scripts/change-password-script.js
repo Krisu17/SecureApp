@@ -115,11 +115,13 @@ document.addEventListener('DOMContentLoaded', function (event) {
 
     function submitRegisterForm() {
         let registerUrl = URL + "reset_password/" + token_url;
+        let csrfToken = document.getElementById("csrf_token");
 
         let registerParams = {
             method: POST,
             body: new FormData(recoveryForm),
-            redirect: "follow"
+            redirect: "follow",
+            "X-CSRF-Token": csrfToken
         };
 
         fetch(registerUrl, registerParams)

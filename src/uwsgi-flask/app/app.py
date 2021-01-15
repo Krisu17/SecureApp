@@ -1,10 +1,11 @@
 import time, os, re
 from flask import Flask, render_template, send_file, request, jsonify, redirect, url_for, abort, session, make_response
+from flask_wtf.csrf import CSRFProtect
 import hashlib
 import bcrypt
 from base64 import b64decode, b64encode
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from .mariadb_dao import MariaDBDAO
 from secrets import token_urlsafe
 from Cryptodome.Protocol.KDF import PBKDF2
@@ -19,7 +20,8 @@ app = Flask(__name__)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SECURE"] = True
 app.secret_key = os.environ.get(APP_SECRET)
-
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=300)
+csrf = CSRFProtect(app)
 
 dao = MariaDBDAO("mariadb")
 
@@ -32,7 +34,7 @@ URL = "https://localhost/"
 @app.after_request
 def add_security_headers(response):
     response.headers['server'] = None
-    # response.headers['Content-Security-Policy']="default-src \'self\';font-src 'http://fonts.googleapis.com/css2?family=Poppins'; img-src 'self'; script-src 'self'; style-src 'self'; frame-src 'self';"
+    response.headers['Content-Security-Policy']='default-src \'self\'; font-src \'self\'; style-src \'self\' https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css'
     return response
 
 
@@ -85,13 +87,12 @@ def notes():
         
         else:
             isValidCookie = False
-            response = make_response(render_template("notes.html", isValidCookie=isValidCookie, login=login))
+            response = make_response(render_template("notes.html", isValidCookie=isValidCookie))
             return response
     except Exception as e:
         print("Catched error: ")
         print(e)
-        response = make_response("Bad request", 400)
-        return response
+        return abort(400)
     
 
 
@@ -119,7 +120,8 @@ def add_new_note():
         title = noteForm.get("title")
         text = noteForm.get("note_text")
         login = session['username']
-        if(True): # to inspekt, add negative validation
+        file = request.files["note_file"]
+        if(isSafeContent(title) and isSafeContent(text)): 
             password = ""
             iv = ""
             salt = ""
@@ -230,8 +232,7 @@ def reset_urls(token_url):
     if(login is not None):
         response = make_response(render_template("password_recovery_form.html", login=login, token_url=token_url))
         return response
-    response = make_response("NotFound", 404)
-    return response
+    return abort(404)
 
 @app.route('/reset_password/<string:token_url>', methods=[POST])
 def reset_password_url(token_url):
@@ -262,10 +263,12 @@ def reset_password_url(token_url):
 def logout():
     if ('username' in session.keys()):
         session.pop('username',None)
+        session.clear()
     return redirect("/")
 
 @app.route('/register_new_user', methods=[POST])
 def register_new_user():
+    print("Numero uno")
     registerForm = request.form
     if(registerForm.get("login") is None or
     registerForm.get("password") is None or
@@ -273,6 +276,7 @@ def register_new_user():
     registerForm.get("surname") is None or
     registerForm.get("email") is None or
     registerForm.get("birthDate") is None ) :
+        print("Pierwsze")
         response = make_response("Bad request", 400)
         return response
     if(isRegisterDataCorrect(registerForm)):
@@ -291,6 +295,7 @@ def register_new_user():
         response = make_response("User created", 201)
         return response
     else:
+        print("Drugie")
         response = make_response("Bad request", 400)
         return response
 
@@ -340,6 +345,7 @@ def login_user():
                 if(bcrypt.checkpw(passwordHashedTriple.hexdigest().encode('utf-8'), cryptedPassFromDb.encode('utf-8'))):
                     dao.resetSecurityRecord(request.remote_addr)
                     session['username'] = login
+                    session.permanent = True
                     del passwordHashedOnce
                     del passwordHashedTwice
                     del passwordHashedTriple
@@ -412,6 +418,23 @@ def isPasswordValid(password):
     else:
         return False
 
+def isSafeContent(text):
+    if "'" in text:
+        return False
+    if "--" in text:
+        return False
+    if "/*" in text:
+        return False
+    if "#" in text:
+        return False
+    if ";" in text:
+        return False
+    if "<" in text:
+        return False
+    if ">" in text:
+        return False
+    return True
+
 def encode_text_from_note(text, password):
     salt = get_random_bytes(16)
     key = PBKDF2(password.encode('utf-8'), salt)
@@ -421,28 +444,28 @@ def encode_text_from_note(text, password):
     iv = b64encode(aes.iv).decode('utf-8')
     return encryptedText, iv, b64encode(salt).decode('utf-8')
 
-# @app.errorhandler(400)
-# def bad_request(error):
-#     response = make_response(render_template("400.html", error=error))
-#     return response
+@app.errorhandler(400)
+def bad_request(error):
+    response = make_response(render_template("400.html", error=error))
+    return response
 
-# @app.errorhandler(401)
-# def unauthorized(error):
-#     response = make_response(render_template("401.html", error=error))
-#     return response
+@app.errorhandler(401)
+def unauthorized(error):
+    response = make_response(render_template("401.html", error=error))
+    return response
 
-# @app.errorhandler(403)
-# def forbidden(error):
-#     response = make_response(render_template("403.html", error=error))
-#     return response
+@app.errorhandler(403)
+def forbidden(error):
+    response = make_response(render_template("403.html", error=error))
+    return response
 
-# @app.errorhandler(404)
-# def page_not_found(error):
-#     response = make_response(render_template("404.html", error=error))
-#     return response
+@app.errorhandler(404)
+def page_not_found(error):
+    response = make_response(render_template("404.html", error=error))
+    return response
 
-# @app.errorhandler(500)
-# def internal_server_error(error):
-#     response = make_response(render_template("500.html", error=error))
-#     return response
+@app.errorhandler(500)
+def internal_server_error(error):
+    response = make_response(render_template("500.html", error=error))
+    return response
 

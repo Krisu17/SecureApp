@@ -218,11 +218,13 @@ document.addEventListener('DOMContentLoaded', function (event) {
 
     function submitRegisterForm() {
         let registerUrl = URL + "register_new_user";
+        let csrfToken = document.getElementById("csrf_token");
 
         let registerParams = {
             method: POST,
             body: new FormData(registrationForm),
-            redirect: "follow"
+            redirect: "follow",
+            "X-CSRF-Token": csrfToken
         };
 
         fetch(registerUrl, registerParams)
@@ -233,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
             });
     }
 
-    function getRegisterResponseData(response) {  // to remove
+    function getRegisterResponseData(response) {  
         let status = response.status;
 
         if (status === HTTP_STATUS.OK || status === HTTP_STATUS.CREATED) {

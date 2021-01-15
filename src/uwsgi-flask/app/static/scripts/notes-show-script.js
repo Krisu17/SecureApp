@@ -36,11 +36,13 @@ document.addEventListener('DOMContentLoaded', function (event) {
 
     const tryDecodeNote = async () => {
         let decodeUrl = URL + "decode_note";
+        let csrfToken = document.getElementById("csrf_token");
 
         let postParams = {
             method: POST,
             body: new FormData(decodeForm),
-            redirect: "follow"
+            redirect: "follow",
+            "X-CSRF-Token": csrfToken
         };
         let res = await fetch(decodeUrl, postParams);
         displayInConsoleCorrectResponse(res);

@@ -176,7 +176,7 @@ class MariaDBDAO:
       self.deny_semicolon(url)
       self.sql.execute(f"SELECT login FROM reset_urls WHERE url = '{url}' AND until > NOW()")
       login = self.sql.fetchone()
-      return login[0]
+      return login
     except mariadb.Error as err:
       flask.flash(f"Database error: {err}") 
 

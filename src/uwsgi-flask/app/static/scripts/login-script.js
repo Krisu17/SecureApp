@@ -35,11 +35,13 @@ document.addEventListener('DOMContentLoaded', function (event) {
 
     const tryLogIn = async () => {
         let loginUrl = URL + "login_user";
+        let csrfToken = document.getElementById("csrf_token");
 
         let loginParams = {
             method: POST,
             body: new FormData(loginForm),
-            redirect: "follow"
+            redirect: "follow",
+            "X-CSRF-Token": csrfToken
         };
 
         let res = await fetch (loginUrl, loginParams);

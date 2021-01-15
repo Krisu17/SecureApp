@@ -3,9 +3,7 @@
 <head>
     <title>Zarejestruj sie do NoTellNote</title>
     <meta charset="utf-8">
-    
     <link href="static/styles/style.css" rel="stylesheet" type="text/css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
     <script src="static/scripts/register-script.js"></script>
     <link rel="shortcut icon" href="../static/images/logo.png">
 </head>
@@ -87,7 +85,7 @@
         <div class="form-row">
             <input id="button-reg-form" type="submit" value="Rejestruj"/>
         </div>
-
+        <input id="csrf_token" type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     </form>
 
 </section>

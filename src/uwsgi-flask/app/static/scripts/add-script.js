@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     var HTTP_STATUS = {OK: 200, CREATED: 201, BAD_REQUEST: 400, FORBIDDEN: 403, NOT_FOUND: 404};
 
     prepareEventOnTitleChange();
+    prepareEventOnTextChange();
     prepareEventOnPasswordChange();
 
     let addForm = document.getElementById("add-form");
@@ -34,13 +35,20 @@ document.addEventListener('DOMContentLoaded', function (event) {
         passwordInput.addEventListener("change", updatePasswordValidityMessage);
     }
 
+    function prepareEventOnTextChange() {
+        let textInput = document.getElementById(NOTE_TEXT_FIEL_ID);
+        textInput.addEventListener("change", updateTextMessage);
+    }
+
     const tryAddNote = async () => {
         let addUrl = URL + "add_new_note";
+        let csrfToken = document.getElementById("csrf_token");
 
         let postParams = {
             method: POST,
             body: new FormData(addForm),
-            redirect: "follow"
+            redirect: "follow",
+            "X-CSRF-Token": csrfToken
         };
 
         let res = await fetch (addUrl, postParams);
@@ -62,9 +70,11 @@ document.addEventListener('DOMContentLoaded', function (event) {
         removeWarningMessage(warningAddingInfoElemId);
         let validityWarningElemId = document.getElementById("unsuccessfulAdding");
         let passwordWarningElemId = document.getElementById("passwordWarning");
+        let textWarningElemId = document.getElementById("textWarning");
         
         if( validityWarningElemId === null &&
-            passwordWarningElemId === null) {
+            passwordWarningElemId === null &&
+            textWarningElemId === null) {
                 try{
                     let res = await tryAddNote();
                     setTimeout(function(){
@@ -156,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     function isTitleValid() {
         let regExpression = /^[A-Za-z0-9]+$/;
         let title = document.getElementById(TITLE_FIELD_ID);
-        if (title.value.match(regExpression) && title.value.length > 2) {
+        if (title.value.match(regExpression) && title.value.length > 2 && isSafeContent(title)) {
             return true;
         } else {
             return false;
@@ -184,6 +194,20 @@ document.addEventListener('DOMContentLoaded', function (event) {
         }
     }
 
+    function updateTextMessage() {
+        let warningElemId = "textWarning";
+        let warningMessage = "Tekst nie może zawierać niebezpiecznych znaków";
+        text = document.getElementById(NOTE_TEXT_FIEL_ID);
+
+        console.log(text.value)
+        console.log(isSafeContent(text.value))
+        if (isSafeContent(text.value) === true) {
+            removeWarningMessage(warningElemId);
+        } else {
+            showWarningMessage(warningElemId, warningMessage, NOTE_TEXT_FIEL_ID);
+        }
+    }
+
     function updateTitleMessage() {
         let validityWarningElemId = "validTitleWarning";
         let wrongTitleFormatWarningMessage = "Tytuł notatki musi składać się z co najmniej 3 znaków i zawierać tylko litery lub cyfry."
@@ -202,6 +226,23 @@ document.addEventListener('DOMContentLoaded', function (event) {
         }
     }
     
+    function isSafeContent(text) {
+        if((text).includes("'"))
+            return false;
+        if((text).includes("--"))
+            return false;
+        if((text).includes("/*"))
+            return false;
+        if((text).includes("#"))
+            return false;
+        if((text).includes(";"))
+            return false;
+        if((text).includes("<"))
+            return false;
+        if((text).includes(">"))
+            return false;
+        return true;
+    }
 
 });
 

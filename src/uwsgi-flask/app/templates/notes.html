@@ -5,7 +5,6 @@
     <title>Notatki do NoTellNote</title>
     <meta charset="utf-8">
     <link href="static/styles/style.css" rel="stylesheet" type="text/css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
     <script src="static/scripts/notes-show-script.js"></script>
     <link rel="icon" type="image/png" href="../static/images/logo.png" />
 </head>
@@ -118,7 +117,7 @@
                     </tr>
                 </tbody>
             </table>
-
+            <input id="csrf_token" type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         </form>
     </section>
     <input type="hidden" id="login" name="login" value="{{login}}">
